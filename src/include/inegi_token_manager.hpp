@@ -2,8 +2,23 @@
 
 #include "duckdb.hpp"
 #include "duckdb/main/client_context.hpp"
+#include "duckdb/main/client_context_state.hpp"
 
 namespace duckdb {
+
+// State class to store INEGI API token in ClientContext
+class INEGITokenState : public ClientContextState {
+public:
+	explicit INEGITokenState(string token_p) : token(std::move(token_p)) {
+	}
+
+	string GetToken() const {
+		return token;
+	}
+
+private:
+	string token;
+};
 
 class INEGITokenManager {
 public:

@@ -192,18 +192,29 @@ error: 'class duckdb::ExtensionLoader' has no member named 'GetDatabase'
    };
    ```
 
-4. **Updated RegisteredStateManager API** in `src/inegi_token_manager.cpp`:
-   ```cpp
-   // Before (map-like access)
-   context.registered_state[TOKEN_KEY] = value;
-   auto it = context.registered_state.find(TOKEN_KEY);
-   context.registered_state.erase(TOKEN_KEY);
+4. **Updated RegisteredStateManager API** - Created custom `ClientContextState` subclass:
    
-   // After (pointer-based API)
-   context.registered_state->Set(TOKEN_KEY, value);
-   context.registered_state->Get(TOKEN_KEY);
-   context.registered_state->Contains(TOKEN_KEY);
-   context.registered_state->Remove(TOKEN_KEY);
+   **New class in `src/include/inegi_token_manager.hpp`**:
+   ```cpp
+   class INEGITokenState : public ClientContextState {
+   public:
+       explicit INEGITokenState(string token_p) : token(std::move(token_p)) {}
+       string GetToken() const { return token; }
+   private:
+       string token;
+   };
+   ```
+   
+   **Updated `src/inegi_token_manager.cpp`**:
+   ```cpp
+   // Before (map-like access with Value)
+   context.registered_state[TOKEN_KEY] = make_shared_ptr<Value>(Value(token));
+   
+   // After (proper ClientContextState subclass)
+   context.registered_state->Insert(TOKEN_KEY, make_shared_ptr<INEGITokenState>(token));
+   auto state = context.registered_state->Get<INEGITokenState>(TOKEN_KEY);
+   if (!state) { /* handle missing */ }
+   return state->GetToken();
    ```
 
 **Result**: Extension now fully compatible with DuckDB v1.4.4 API
