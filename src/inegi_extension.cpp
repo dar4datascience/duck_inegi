@@ -220,15 +220,15 @@ static void LoadInternal(ExtensionLoader &loader) {
 	ExtensionUtil::RegisterFunction(loader.GetDatabase(), read_function);
 }
 
-void INEGIExtension::Load(ExtensionLoader &loader) {
+void InegiExtension::Load(ExtensionLoader &loader) {
 	LoadInternal(loader);
 }
 
-std::string INEGIExtension::Name() {
+std::string InegiExtension::Name() {
 	return "inegi";
 }
 
-std::string INEGIExtension::Version() const {
+std::string InegiExtension::Version() const {
 #ifdef EXT_VERSION_INEGI
 	return EXT_VERSION_INEGI;
 #else

@@ -4,7 +4,7 @@
 
 namespace duckdb {
 
-class INEGIExtension : public Extension {
+class InegiExtension : public Extension {
 public:
 	void Load(ExtensionLoader &db) override;
 	std::string Name() override;
