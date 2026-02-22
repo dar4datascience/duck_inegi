@@ -51,7 +51,7 @@ jobs:
           make test
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-extension
           path: |
@@ -98,7 +98,7 @@ jobs:
           make test
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-extension
           path: |
@@ -141,7 +141,7 @@ jobs:
           build/release/test/Release/unittest.exe
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-extension
           path: |
