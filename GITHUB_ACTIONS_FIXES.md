@@ -155,13 +155,54 @@ This request has been automatically failed because it uses a deprecated version 
 
 ---
 
+### 6. **DuckDB v1.4.4 API Compatibility** ✅ FIXED
+
+**Problem**: Code using deprecated DuckDB APIs
+```
+error: 'ExtensionUtil' class has been removed
+error: 'class duckdb::ExtensionLoader' has no member named 'GetDatabase'
+```
+
+**Root Cause**: Extension written for older DuckDB API
+
+**Solution**: Updated to DuckDB v1.4.4 API
+
+**Changes to `src/inegi_extension.cpp`**:
+
+1. **Removed ExtensionUtil include**:
+   ```cpp
+   // Removed: #include "duckdb/main/extension_util.hpp"
+   ```
+
+2. **Updated function registration** (3 occurrences):
+   ```cpp
+   // Before
+   ExtensionUtil::RegisterFunction(loader.GetDatabase(), function);
+   
+   // After
+   loader.RegisterFunction(function);
+   ```
+
+3. **Fixed const correctness in bind data**:
+   ```cpp
+   struct INEGIReadBindData : public TableFunctionData {
+       // ...
+       mutable nlohmann::json data;        // Added mutable
+       mutable bool data_fetched = false;  // Added mutable
+   };
+   ```
+
+**Result**: Extension now compatible with DuckDB v1.4.4 API
+
+---
+
 ## 📋 Files Modified
 
 | File | Changes |
 |------|---------|
 | `CMakeLists.txt` | CMake version, optional dependencies, conditional linking |
 | `src/include/inegi_extension.hpp` | Class name: `INEGIExtension` → `InegiExtension` |
-| `src/inegi_extension.cpp` | Class name in 3 method definitions |
+| `src/inegi_extension.cpp` | Class name, DuckDB v1.4.4 API updates, const correctness |
 | `.github/workflows/CI.yml` | `upload-artifact` v3 → v4 (3 places) |
 | `.github/workflows/MainDistributionPipeline.yml` | Removed invalid `secrets:` block |
 | All source/test files | Auto-formatted with `make format-fix` |

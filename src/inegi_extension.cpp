@@ -7,7 +7,6 @@
 #include "duckdb/common/exception.hpp"
 #include "duckdb/function/scalar_function.hpp"
 #include "duckdb/function/table_function.hpp"
-#include "duckdb/main/extension_util.hpp"
 #include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 #include <nlohmann/json.hpp>
 
@@ -47,8 +46,8 @@ struct INEGIReadBindData : public TableFunctionData {
 	bool recent_only;
 	string bank;
 	string token;
-	nlohmann::json data;
-	bool data_fetched = false;
+	mutable nlohmann::json data;
+	mutable bool data_fetched = false;
 };
 
 struct INEGIReadGlobalState : public GlobalTableFunctionState {
@@ -202,11 +201,11 @@ static void LoadInternal(ExtensionLoader &loader) {
 	// Register INEGI_SetToken scalar function
 	auto set_token_function =
 	    ScalarFunction("INEGI_SetToken", {LogicalType::VARCHAR}, LogicalType::BOOLEAN, INEGISetTokenFunction);
-	ExtensionUtil::RegisterFunction(loader.GetDatabase(), set_token_function);
+	loader.RegisterFunction(set_token_function);
 
 	// Register INEGI_GetToken scalar function
 	auto get_token_function = ScalarFunction("INEGI_GetToken", {}, LogicalType::VARCHAR, INEGIGetTokenFunction);
-	ExtensionUtil::RegisterFunction(loader.GetDatabase(), get_token_function);
+	loader.RegisterFunction(get_token_function);
 
 	// Register INEGI_Read table function
 	TableFunction read_function("INEGI_Read", {LogicalType::VARCHAR}, INEGIReadFunction, INEGIReadBind, INEGIReadInit);
@@ -217,7 +216,7 @@ static void LoadInternal(ExtensionLoader &loader) {
 	read_function.named_parameters["recent_only"] = LogicalType::BOOLEAN;
 	read_function.named_parameters["bank"] = LogicalType::VARCHAR;
 
-	ExtensionUtil::RegisterFunction(loader.GetDatabase(), read_function);
+	loader.RegisterFunction(read_function);
 }
 
 void InegiExtension::Load(ExtensionLoader &loader) {
