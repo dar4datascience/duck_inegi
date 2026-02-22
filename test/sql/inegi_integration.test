@@ -1,6 +1,6 @@
 # name: test/sql/inegi_integration.test
 # description: Integration tests for INEGI extension with real API calls (requires INEGI_TOKEN)
-# group: [inegi]
+# group: [sql]
 
 # This test requires a valid INEGI token set in the INEGI_TOKEN environment variable
 # Skip if token is not available

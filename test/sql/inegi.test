@@ -1,6 +1,6 @@
 # name: test/sql/inegi.test
 # description: test INEGI extension
-# group: [inegi]
+# group: [sql]
 
 # Before we load the extension, this will fail
 statement error

@@ -17,7 +17,7 @@ namespace duckdb {
 static void INEGISetTokenFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &token_vector = args.data[0];
 	auto &context = state.GetContext();
-	
+
 	UnaryExecutor::Execute<string_t, bool>(token_vector, result, args.size(), [&](string_t token) {
 		string token_str = token.GetString();
 		INEGITokenManager::SetToken(context, token_str);
@@ -28,15 +28,13 @@ static void INEGISetTokenFunction(DataChunk &args, ExpressionState &state, Vecto
 // INEGI_GetToken function - retrieves current token (for debugging)
 static void INEGIGetTokenFunction(DataChunk &args, ExpressionState &state, Vector &result) {
 	auto &context = state.GetContext();
-	
+
 	if (!INEGITokenManager::HasToken(context)) {
-		throw InvalidInputException(
-			"INEGI API token not set. Please obtain a token from:\n"
-			"https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify\n"
-			"Then set it using: SELECT INEGI_SetToken('your-token-here');"
-		);
+		throw InvalidInputException("INEGI API token not set. Please obtain a token from:\n"
+		                            "https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify\n"
+		                            "Then set it using: SELECT INEGI_SetToken('your-token-here');");
 	}
-	
+
 	string token = INEGITokenManager::GetToken(context);
 	result.SetValue(0, Value(token));
 }
@@ -58,22 +56,20 @@ struct INEGIReadGlobalState : public GlobalTableFunctionState {
 };
 
 static unique_ptr<FunctionData> INEGIReadBind(ClientContext &context, TableFunctionBindInput &input,
-                                               vector<LogicalType> &return_types, vector<string> &names) {
+                                              vector<LogicalType> &return_types, vector<string> &names) {
 	auto result = make_uniq<INEGIReadBindData>();
-	
+
 	// Get token from session
 	if (!INEGITokenManager::HasToken(context)) {
-		throw InvalidInputException(
-			"INEGI API token not set. Please obtain a token from:\n"
-			"https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify\n"
-			"Then set it using: SELECT INEGI_SetToken('your-token-here');"
-		);
+		throw InvalidInputException("INEGI API token not set. Please obtain a token from:\n"
+		                            "https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify\n"
+		                            "Then set it using: SELECT INEGI_SetToken('your-token-here');");
 	}
 	result->token = INEGITokenManager::GetToken(context);
-	
+
 	// Get indicator ID (required)
 	result->indicator_id = input.inputs[0].ToString();
-	
+
 	// Get optional parameters from named parameters
 	for (auto &kv : input.named_parameters) {
 		if (kv.first == "language") {
@@ -86,12 +82,15 @@ static unique_ptr<FunctionData> INEGIReadBind(ClientContext &context, TableFunct
 			result->bank = kv.second.ToString();
 		}
 	}
-	
+
 	// Set defaults
-	if (result->language.empty()) result->language = "es";
-	if (result->geography.empty()) result->geography = "00";
-	if (result->bank.empty()) result->bank = "BIE";
-	
+	if (result->language.empty())
+		result->language = "es";
+	if (result->geography.empty())
+		result->geography = "00";
+	if (result->bank.empty())
+		result->bank = "BIE";
+
 	// Define output schema
 	names.emplace_back("time_period");
 	return_types.emplace_back(LogicalType::VARCHAR);
@@ -101,43 +100,38 @@ static unique_ptr<FunctionData> INEGIReadBind(ClientContext &context, TableFunct
 	return_types.emplace_back(LogicalType::VARCHAR);
 	names.emplace_back("indicator_name");
 	return_types.emplace_back(LogicalType::VARCHAR);
-	
+
 	return std::move(result);
 }
 
 static unique_ptr<GlobalTableFunctionState> INEGIReadInit(ClientContext &context, TableFunctionInitInput &input) {
 	auto result = make_uniq<INEGIReadGlobalState>();
 	auto &bind_data = input.bind_data->Cast<INEGIReadBindData>();
-	
+
 	// Fetch data from API
 	if (!bind_data.data_fetched) {
 		INEGIAPIClient client(bind_data.token);
-		bind_data.data = client.FetchIndicatorData(
-			bind_data.indicator_id,
-			bind_data.language,
-			bind_data.geography,
-			bind_data.recent_only,
-			bind_data.bank
-		);
+		bind_data.data = client.FetchIndicatorData(bind_data.indicator_id, bind_data.language, bind_data.geography,
+		                                           bind_data.recent_only, bind_data.bank);
 		bind_data.data_fetched = true;
 	}
-	
+
 	return std::move(result);
 }
 
 static void INEGIReadFunction(ClientContext &context, TableFunctionInput &data_p, DataChunk &output) {
 	auto &bind_data = data_p.bind_data->Cast<INEGIReadBindData>();
 	auto &state = data_p.global_state->Cast<INEGIReadGlobalState>();
-	
+
 	// Parse JSON-Stat format
 	try {
 		if (!bind_data.data.contains("value") || !bind_data.data.contains("dimension")) {
 			throw IOException("Invalid JSON-Stat format received from INEGI API");
 		}
-		
+
 		auto values = bind_data.data["value"];
 		auto dimensions = bind_data.data["dimension"];
-		
+
 		// Get indicator metadata
 		string indicator_name = "";
 		if (dimensions.contains("INDICADOR") && dimensions["INDICADOR"].contains("category")) {
@@ -149,7 +143,7 @@ static void INEGIReadFunction(ClientContext &context, TableFunctionInput &data_p
 				}
 			}
 		}
-		
+
 		// Get time periods
 		std::vector<string> time_periods;
 		if (dimensions.contains("TIME_PERIOD") && dimensions["TIME_PERIOD"].contains("category")) {
@@ -161,26 +155,26 @@ static void INEGIReadFunction(ClientContext &context, TableFunctionInput &data_p
 				}
 			}
 		}
-		
+
 		idx_t total_rows = values.size();
 		idx_t rows_to_output = std::min((idx_t)STANDARD_VECTOR_SIZE, total_rows - state.current_row);
-		
+
 		if (rows_to_output == 0) {
 			output.SetCardinality(0);
 			return;
 		}
-		
+
 		// Fill output chunk
 		for (idx_t i = 0; i < rows_to_output; i++) {
 			idx_t row_idx = state.current_row + i;
-			
+
 			// Time period
 			if (row_idx < time_periods.size()) {
 				output.SetValue(0, i, Value(time_periods[row_idx]));
 			} else {
 				output.SetValue(0, i, Value());
 			}
-			
+
 			// Observation value
 			if (row_idx < values.size() && !values[row_idx].is_null()) {
 				double val = values[row_idx].get<double>();
@@ -188,17 +182,17 @@ static void INEGIReadFunction(ClientContext &context, TableFunctionInput &data_p
 			} else {
 				output.SetValue(1, i, Value());
 			}
-			
+
 			// Indicator ID
 			output.SetValue(2, i, Value(bind_data.indicator_id));
-			
+
 			// Indicator name
 			output.SetValue(3, i, Value(indicator_name));
 		}
-		
+
 		state.current_row += rows_to_output;
 		output.SetCardinality(rows_to_output);
-		
+
 	} catch (const nlohmann::json::exception &e) {
 		throw IOException("Error parsing JSON response: " + string(e.what()));
 	}
@@ -206,38 +200,23 @@ static void INEGIReadFunction(ClientContext &context, TableFunctionInput &data_p
 
 static void LoadInternal(ExtensionLoader &loader) {
 	// Register INEGI_SetToken scalar function
-	auto set_token_function = ScalarFunction(
-		"INEGI_SetToken",
-		{LogicalType::VARCHAR},
-		LogicalType::BOOLEAN,
-		INEGISetTokenFunction
-	);
+	auto set_token_function =
+	    ScalarFunction("INEGI_SetToken", {LogicalType::VARCHAR}, LogicalType::BOOLEAN, INEGISetTokenFunction);
 	ExtensionUtil::RegisterFunction(loader.GetDatabase(), set_token_function);
-	
+
 	// Register INEGI_GetToken scalar function
-	auto get_token_function = ScalarFunction(
-		"INEGI_GetToken",
-		{},
-		LogicalType::VARCHAR,
-		INEGIGetTokenFunction
-	);
+	auto get_token_function = ScalarFunction("INEGI_GetToken", {}, LogicalType::VARCHAR, INEGIGetTokenFunction);
 	ExtensionUtil::RegisterFunction(loader.GetDatabase(), get_token_function);
-	
+
 	// Register INEGI_Read table function
-	TableFunction read_function(
-		"INEGI_Read",
-		{LogicalType::VARCHAR},
-		INEGIReadFunction,
-		INEGIReadBind,
-		INEGIReadInit
-	);
-	
+	TableFunction read_function("INEGI_Read", {LogicalType::VARCHAR}, INEGIReadFunction, INEGIReadBind, INEGIReadInit);
+
 	// Add named parameters
 	read_function.named_parameters["language"] = LogicalType::VARCHAR;
 	read_function.named_parameters["geography"] = LogicalType::VARCHAR;
 	read_function.named_parameters["recent_only"] = LogicalType::BOOLEAN;
 	read_function.named_parameters["bank"] = LogicalType::VARCHAR;
-	
+
 	ExtensionUtil::RegisterFunction(loader.GetDatabase(), read_function);
 }
 

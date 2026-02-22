@@ -1,6 +1,6 @@
 # name: test/sql/inegi_token.test
 # description: Test INEGI token management functions
-# group: [inegi]
+# group: [sql]
 
 require inegi
 

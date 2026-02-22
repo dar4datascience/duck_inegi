@@ -1,6 +1,6 @@
 # name: test/sql/inegi_read.test
 # description: Test INEGI_Read function (requires valid token and network access)
-# group: [inegi]
+# group: [sql]
 
 require inegi
 

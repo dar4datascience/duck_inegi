@@ -5,30 +5,28 @@
 namespace duckdb {
 
 void INEGITokenManager::SetToken(ClientContext &context, const string &token) {
-    if (token.empty()) {
-        throw InvalidInputException("INEGI API token cannot be empty");
-    }
-    context.registered_state[TOKEN_KEY] = make_shared_ptr<Value>(Value(token));
+	if (token.empty()) {
+		throw InvalidInputException("INEGI API token cannot be empty");
+	}
+	context.registered_state[TOKEN_KEY] = make_shared_ptr<Value>(Value(token));
 }
 
 string INEGITokenManager::GetToken(ClientContext &context) {
-    auto it = context.registered_state.find(TOKEN_KEY);
-    if (it == context.registered_state.end()) {
-        throw InvalidInputException(
-            "INEGI API token not set. Please obtain a token from:\n"
-            "https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify\n"
-            "Then set it using: SELECT INEGI_SetToken('your-token-here');"
-        );
-    }
-    return it->second->GetValue<string>();
+	auto it = context.registered_state.find(TOKEN_KEY);
+	if (it == context.registered_state.end()) {
+		throw InvalidInputException("INEGI API token not set. Please obtain a token from:\n"
+		                            "https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify\n"
+		                            "Then set it using: SELECT INEGI_SetToken('your-token-here');");
+	}
+	return it->second->GetValue<string>();
 }
 
 bool INEGITokenManager::HasToken(ClientContext &context) {
-    return context.registered_state.find(TOKEN_KEY) != context.registered_state.end();
+	return context.registered_state.find(TOKEN_KEY) != context.registered_state.end();
 }
 
 void INEGITokenManager::ClearToken(ClientContext &context) {
-    context.registered_state.erase(TOKEN_KEY);
+	context.registered_state.erase(TOKEN_KEY);
 }
 
 } // namespace duckdb
