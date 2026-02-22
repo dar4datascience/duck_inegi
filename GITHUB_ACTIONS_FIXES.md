@@ -192,7 +192,21 @@ error: 'class duckdb::ExtensionLoader' has no member named 'GetDatabase'
    };
    ```
 
-**Result**: Extension now compatible with DuckDB v1.4.4 API
+4. **Updated RegisteredStateManager API** in `src/inegi_token_manager.cpp`:
+   ```cpp
+   // Before (map-like access)
+   context.registered_state[TOKEN_KEY] = value;
+   auto it = context.registered_state.find(TOKEN_KEY);
+   context.registered_state.erase(TOKEN_KEY);
+   
+   // After (pointer-based API)
+   context.registered_state->Set(TOKEN_KEY, value);
+   context.registered_state->Get(TOKEN_KEY);
+   context.registered_state->Contains(TOKEN_KEY);
+   context.registered_state->Remove(TOKEN_KEY);
+   ```
+
+**Result**: Extension now fully compatible with DuckDB v1.4.4 API
 
 ---
 
@@ -203,6 +217,7 @@ error: 'class duckdb::ExtensionLoader' has no member named 'GetDatabase'
 | `CMakeLists.txt` | CMake version, optional dependencies, conditional linking |
 | `src/include/inegi_extension.hpp` | Class name: `INEGIExtension` → `InegiExtension` |
 | `src/inegi_extension.cpp` | Class name, DuckDB v1.4.4 API updates, const correctness |
+| `src/inegi_token_manager.cpp` | RegisteredStateManager API updates (Set/Get/Contains/Remove) |
 | `.github/workflows/CI.yml` | `upload-artifact` v3 → v4 (3 places) |
 | `.github/workflows/MainDistributionPipeline.yml` | Removed invalid `secrets:` block |
 | All source/test files | Auto-formatted with `make format-fix` |
