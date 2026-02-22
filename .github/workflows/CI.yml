@@ -1,0 +1,146 @@
+#
+# Continuous Integration workflow for INEGI extension
+# This workflow builds and tests the extension on every push and pull request
+#
+name: CI
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' && github.sha || '' }}
+  cancel-in-progress: true
+
+jobs:
+  linux-build:
+    name: Linux Build & Test
+    runs-on: ubuntu-latest
+    env:
+      VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      VCPKG_TARGET_TRIPLET: 'x64-linux'
+      GEN: ninja
+    
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq ninja-build libcurl4-openssl-dev
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11.1
+        with:
+          vcpkgGitCommitId: ce613c41372b23b1f51333815feb3edd87ef8a8b
+
+      - name: Build extension
+        run: |
+          make release
+
+      - name: Run tests
+        run: |
+          make test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-extension
+          path: |
+            build/release/extension/inegi/inegi.duckdb_extension
+            build/release/duckdb
+
+  macos-build:
+    name: MacOS Build & Test
+    runs-on: macos-latest
+    env:
+      VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      VCPKG_TARGET_TRIPLET: 'x64-osx'
+      OSX_BUILD_ARCH: 'x86_64'
+      GEN: ninja
+
+    steps:
+      - name: Install dependencies
+        run: |
+          brew install ninja
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11.1
+        with:
+          vcpkgGitCommitId: ce613c41372b23b1f51333815feb3edd87ef8a8b
+
+      - name: Build extension
+        run: |
+          make release
+
+      - name: Run tests
+        run: |
+          make test
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-extension
+          path: |
+            build/release/extension/inegi/inegi.duckdb_extension
+            build/release/duckdb
+
+  windows-build:
+    name: Windows Build & Test
+    runs-on: windows-latest
+    env:
+      VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      VCPKG_TARGET_TRIPLET: 'x64-windows-static-md'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11.1
+        with:
+          vcpkgGitCommitId: ce613c41372b23b1f51333815feb3edd87ef8a8b
+
+      - name: Build extension
+        shell: bash
+        run: |
+          make release
+
+      - name: Run tests
+        shell: bash
+        run: |
+          build/release/test/Release/unittest.exe
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-extension
+          path: |
+            build/release/extension/inegi/inegi.duckdb_extension
+            build/release/duckdb.exe
