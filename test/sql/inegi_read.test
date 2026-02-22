@@ -10,9 +10,6 @@ SELECT * FROM INEGI_Read('1234567');
 ----
 INEGI API token not set
 
-# Set token from environment variable if available, otherwise use test token
+# Set test token (real API tests are in inegi_integration.test)
 statement ok
-SELECT INEGI_SetToken(COALESCE(getenv('INEGI_TOKEN'), 'test-token-12345'));
-
-# Note: Real API tests are in inegi_integration.test
-# That test file will only run actual API calls if INEGI_TOKEN is set in environment
+SELECT INEGI_SetToken('test-token-12345');

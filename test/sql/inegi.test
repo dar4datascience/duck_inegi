@@ -6,7 +6,7 @@
 statement error
 SELECT INEGI_SetToken('test');
 ----
-Catalog Error: Scalar Function with name INEGI_SetToken does not exist!
+Catalog Error: Scalar Function with name inegi_settoken does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
 require inegi
