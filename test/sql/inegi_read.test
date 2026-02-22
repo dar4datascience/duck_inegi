@@ -1,0 +1,38 @@
+# name: test/sql/inegi_read.test
+# description: Test INEGI_Read function (requires valid token and network access)
+# group: [inegi]
+
+require inegi
+
+# Test that INEGI_Read fails without token
+statement error
+SELECT * FROM INEGI_Read('1234567');
+----
+INEGI API token not set
+
+# Set a test token
+statement ok
+SELECT INEGI_SetToken('test-token-12345');
+
+# Note: The following tests would require a valid INEGI token and network access
+# They are commented out for CI/CD environments
+
+# Test basic INEGI_Read with default parameters
+# query IIII
+# SELECT * FROM INEGI_Read('628194') LIMIT 5;
+
+# Test INEGI_Read with custom language
+# query IIII
+# SELECT * FROM INEGI_Read('628194', language='en') LIMIT 5;
+
+# Test INEGI_Read with custom geography (state level)
+# query IIII
+# SELECT * FROM INEGI_Read('628194', geography='99') LIMIT 5;
+
+# Test INEGI_Read with recent_only flag
+# query IIII
+# SELECT * FROM INEGI_Read('628194', recent_only=true) LIMIT 5;
+
+# Test INEGI_Read with BISE bank
+# query IIII
+# SELECT * FROM INEGI_Read('628194', bank='BISE') LIMIT 5;

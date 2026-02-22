@@ -1,0 +1,21 @@
+# name: test/sql/inegi_token.test
+# description: Test INEGI token management functions
+# group: [inegi]
+
+require inegi
+
+# Test setting token
+statement ok
+SELECT INEGI_SetToken('test-token-12345');
+
+# Test getting token (should work after setting)
+query I
+SELECT INEGI_GetToken();
+----
+test-token-12345
+
+# Test that token persists in session
+query I
+SELECT INEGI_GetToken();
+----
+test-token-12345

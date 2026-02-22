@@ -1,0 +1,22 @@
+# name: test/sql/inegi.test
+# description: test INEGI extension
+# group: [inegi]
+
+# Before we load the extension, this will fail
+statement error
+SELECT INEGI_SetToken('test');
+----
+Catalog Error: Scalar Function with name INEGI_SetToken does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require inegi
+
+# Test that INEGI_SetToken works
+statement ok
+SELECT INEGI_SetToken('test-token-12345');
+
+# Test that INEGI_GetToken returns the token we just set
+query I
+SELECT INEGI_GetToken();
+----
+test-token-12345
