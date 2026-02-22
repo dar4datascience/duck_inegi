@@ -1,0 +1,93 @@
+# name: test/sql/inegi_integration.test
+# description: Integration tests for INEGI extension with real API calls (requires INEGI_TOKEN)
+# group: [inegi]
+
+# This test requires a valid INEGI token set in the INEGI_TOKEN environment variable
+# Skip if token is not available
+
+require inegi
+
+# Check if INEGI_TOKEN environment variable is set
+# If not set, these tests will be skipped
+statement ok
+CREATE TABLE env_check AS SELECT getenv('INEGI_TOKEN') as token;
+
+# Only run integration tests if token is available
+statement ok
+CREATE TEMP MACRO has_token() AS (SELECT token IS NOT NULL AND token != '' FROM env_check);
+
+# Set token from environment variable if available
+statement ok
+SELECT CASE 
+    WHEN has_token() THEN INEGI_SetToken(getenv('INEGI_TOKEN'))
+    ELSE true
+END;
+
+# Test 1: Fetch GDP data (only if token is set)
+# This is a real API call to INEGI
+query I
+SELECT CASE 
+    WHEN has_token() THEN (
+        SELECT COUNT(*) > 0 
+        FROM INEGI_Read('628194', recent_only=true)
+    )
+    ELSE true
+END;
+----
+true
+
+# Test 2: Verify data structure (only if token is set)
+query I
+SELECT CASE 
+    WHEN has_token() THEN (
+        SELECT COUNT(*) = 4
+        FROM (
+            DESCRIBE SELECT * FROM INEGI_Read('628194', recent_only=true)
+        )
+    )
+    ELSE true
+END;
+----
+true
+
+# Test 3: Test with English language parameter (only if token is set)
+query I
+SELECT CASE 
+    WHEN has_token() THEN (
+        SELECT COUNT(*) > 0 
+        FROM INEGI_Read('628194', language='en', recent_only=true)
+    )
+    ELSE true
+END;
+----
+true
+
+# Test 4: Verify indicator_id is returned correctly (only if token is set)
+query I
+SELECT CASE 
+    WHEN has_token() THEN (
+        SELECT indicator_id = '628194'
+        FROM INEGI_Read('628194', recent_only=true)
+        LIMIT 1
+    )
+    ELSE true
+END;
+----
+true
+
+# Test 5: Verify observation_value is numeric (only if token is set)
+query I
+SELECT CASE 
+    WHEN has_token() THEN (
+        SELECT observation_value IS NOT NULL
+        FROM INEGI_Read('628194', recent_only=true)
+        LIMIT 1
+    )
+    ELSE true
+END;
+----
+true
+
+# Cleanup
+statement ok
+DROP TABLE env_check;

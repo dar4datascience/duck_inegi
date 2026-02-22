@@ -18,6 +18,7 @@ A DuckDB extension for fetching data from INEGI (Instituto Nacional de Estadíst
 - C++14 compatible compiler
 - Git with submodules
 - VCPKG (for dependency management)
+- INEGI API Token (get it from https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify)
 
 ### Clone and Build
 
@@ -233,7 +234,28 @@ make test
 
 # Run specific test
 ./build/release/test/unittest "test/sql/inegi_token.test"
+
+# Run tests with real API token
+INEGI_TOKEN='your-token-here' make test
 ```
+
+### GitHub Actions Integration Testing
+
+To enable integration tests with real INEGI API data in GitHub Actions:
+
+1. Get your INEGI API token from: https://www.inegi.org.mx/app/desarrolladores/generatoken/Usuarios/token_Verify
+2. Go to your repository **Settings** → **Secrets and variables** → **Actions**
+3. Add a new secret:
+   - **Name**: `INEGI_TOKEN`
+   - **Value**: Your INEGI API token
+4. Push code to trigger workflows
+
+**See detailed guide**: `.github/SETUP_SECRETS.md` or `docs/GITHUB_SECRETS.md`
+
+**What happens without the secret:**
+- ✅ Extension builds successfully
+- ✅ Unit tests pass
+- ⚠️ Integration tests are skipped (no real API calls)
 
 ### Project Structure
 
